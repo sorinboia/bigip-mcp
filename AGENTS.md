@@ -10,8 +10,17 @@
 - Implement log tooling around `/var/log/ltm`, allowing filters while using `/mgmt/tm/util/bash` safely.
 - Keep the implementation in Python, configure everything via environment variables, and plan to test against a real BIG-IP where possible.
 
+# Current Plan & Progress
+
+1. Capture detailed requirements, architecture assumptions, and dependencies for the BIG-IP MCP server, using Context7 references where needed. **Status:** completed.
+2. Design repo scaffolding (Python fastMCP server, configuration layout, docs) and outline implementation tasks. **Status:** completed.
+3. Implement, document, and validate the fastMCP server tools against the BIG-IP APIs. **Status:** pending.
+
+Reminder: whenever progress changes on any of these steps, update their statuses here **and** in the planning tool so both stay in sync.
+
 # AI general behavious
 
 When finishing a task always consider and if needed update the AGENTS.md file.
 Use git to keep track of all changes.
 When doing the research make sure you create additinal files and keep the information in there. They need to be in markdown.
+Keep the plan/tool statuses synchronized: after completing a step, update the plan tracker and mirror the change in the "Current Plan & Progress" section above.
