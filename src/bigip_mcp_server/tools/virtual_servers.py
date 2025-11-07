@@ -30,7 +30,7 @@ def register(mcp: FastMCP, settings: Settings, client: BigIPClient) -> None:
         return f"/{partition}/{name}"
 
     @mcp.tool(
-        name="virtuals.attach_irule",
+        name="virtuals_attach_irule",
         description="Attach an iRule to a virtual server (PATCH /mgmt/tm/ltm/virtual/<name>).",
     )
     async def attach_irule(
@@ -53,7 +53,7 @@ def register(mcp: FastMCP, settings: Settings, client: BigIPClient) -> None:
         }
 
     @mcp.tool(
-        name="virtuals.detach_irule",
+        name="virtuals_detach_irule",
         description="Detach an iRule from a virtual server (PATCH /mgmt/tm/ltm/virtual/<name>).",
     )
     async def detach_irule(

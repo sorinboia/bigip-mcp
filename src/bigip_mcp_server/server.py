@@ -14,7 +14,7 @@ def create_server(settings: Settings | None = None) -> FastMCP:
     mcp = FastMCP(name="bigip-mcp-server")
     client = BigIPClient(settings)
 
-    @mcp.tool(name="server.info", description="Show server configuration context")
+    @mcp.tool(name="server_info", description="Show server configuration context")
     def server_info() -> dict:
         return {
             "bigip_host": settings.bigip_host,

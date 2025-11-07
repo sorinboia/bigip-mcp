@@ -25,7 +25,7 @@ def register(mcp: FastMCP, settings: "Settings", client: BigIPClient) -> None:
             raise RuntimeError(message) from exc
 
     @mcp.tool(
-        name="logs.tail_ltm",
+        name="logs_tail_ltm",
         description="Tail /var/log/ltm with optional substring filtering (POST /mgmt/tm/util/bash).",
     )
     async def tail_ltm(lines: int = 100, contains: str | None = None) -> dict:

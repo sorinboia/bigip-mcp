@@ -91,31 +91,31 @@ async def run_validation(args: argparse.Namespace) -> dict[str, Any]:
 
     async with client:
         await client.list_tools()
-        results["server.info"] = await _call(client, "server.info")
-        results["irules.list_before"] = await _call(client, "irules.list", include_definition=False)
-        results["irules.create"] = await _call(client, "irules.create", name=rule_name, definition=definition_v1)
-        results["irules.update"] = await _call(client, "irules.update", name=rule_name, definition=definition_v2)
+        results["server_info"] = await _call(client, "server_info")
+        results["irules_list_before"] = await _call(client, "irules_list", include_definition=False)
+        results["irules_create"] = await _call(client, "irules_create", name=rule_name, definition=definition_v1)
+        results["irules_update"] = await _call(client, "irules_update", name=rule_name, definition=definition_v2)
         attach_resp = await _call(
             client,
-            "virtuals.attach_irule",
+            "virtuals_attach_irule",
             virtual_name=args.virtual,
             rule_name=rule_name,
         )
-        results["virtuals.attach_irule"] = attach_resp
-        results["logs.tail_ltm"] = await _call(
+        results["virtuals_attach_irule"] = attach_resp
+        results["logs_tail_ltm"] = await _call(
             client,
-            "logs.tail_ltm",
+            "logs_tail_ltm",
             lines=args.log_lines,
             contains=args.log_filter,
         )
         detach_resp = await _call(
             client,
-            "virtuals.detach_irule",
+            "virtuals_detach_irule",
             virtual_name=args.virtual,
             rule_name=rule_name,
         )
-        results["virtuals.detach_irule"] = detach_resp
-        results["irules.delete"] = await _call(client, "irules.delete", name=rule_name)
+        results["virtuals_detach_irule"] = detach_resp
+        results["irules_delete"] = await _call(client, "irules_delete", name=rule_name)
 
     return results
 
@@ -148,12 +148,12 @@ def build_parser() -> argparse.ArgumentParser:
         "--log-lines",
         type=int,
         default=5,
-        help="Number of lines to fetch from logs.tail_ltm.",
+        help="Number of lines to fetch from logs_tail_ltm.",
     )
     parser.add_argument(
         "--log-filter",
         default=None,
-        help="Optional substring filter passed to logs.tail_ltm.",
+        help="Optional substring filter passed to logs_tail_ltm.",
     )
     parser.add_argument(
         "--python",

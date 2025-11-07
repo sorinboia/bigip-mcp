@@ -32,7 +32,7 @@ def register(mcp: FastMCP, settings: Settings, client: BigIPClient) -> None:
         return f"/{partition}/{name}"
 
     @mcp.tool(
-        name="irules.list",
+        name="irules_list",
         description="List iRules in the configured partition (GET /mgmt/tm/ltm/rule).",
     )
     async def list_irules(include_definition: bool = False) -> dict:
@@ -46,7 +46,7 @@ def register(mcp: FastMCP, settings: Settings, client: BigIPClient) -> None:
         }
 
     @mcp.tool(
-        name="irules.create",
+        name="irules_create",
         description="Create a new iRule via POST /mgmt/tm/ltm/rule.",
     )
     async def create_irule(name: str, definition: str, partition: str | None = None) -> dict:
@@ -61,7 +61,7 @@ def register(mcp: FastMCP, settings: Settings, client: BigIPClient) -> None:
         }
 
     @mcp.tool(
-        name="irules.update",
+        name="irules_update",
         description="Replace an iRule definition via PATCH /mgmt/tm/ltm/rule/<name>.",
     )
     async def update_irule(name: str, definition: str, partition: str | None = None) -> dict:
@@ -74,7 +74,7 @@ def register(mcp: FastMCP, settings: Settings, client: BigIPClient) -> None:
         }
 
     @mcp.tool(
-        name="irules.delete",
+        name="irules_delete",
         description="Delete an iRule via DELETE /mgmt/tm/ltm/rule/<name>.",
     )
     async def delete_irule(name: str, partition: str | None = None) -> dict:

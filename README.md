@@ -83,11 +83,11 @@ Use `--output validation.json` to capture the JSON blob on disk for later auditi
 
 | Tool name | Description |
 | --------- | ----------- |
-| `server.info` | Echoes the server's configuration context (host, partition, TLS verification). |
-| `irules.list` | Lists iRules scoped to the configured partition, optionally returning the TCL body. |
-| `irules.create` / `irules.update` / `irules.delete` | CRUD helpers that wrap `POST/PATCH/DELETE /mgmt/tm/ltm/rule`. |
-| `virtuals.attach_irule` / `virtuals.detach_irule` | Appends or removes fully-qualified iRules on LTM virtual servers by manipulating the `rules` array. |
-| `logs.tail_ltm` | Tails `/var/log/ltm` safely via `POST /mgmt/tm/util/bash` with optional substring filtering. |
+| `server_info` | Echoes the server's configuration context (host, partition, TLS verification). |
+| `irules_list` | Lists iRules scoped to the configured partition, optionally returning the TCL body. |
+| `irules_create` / `irules_update` / `irules_delete` | CRUD helpers that wrap `POST/PATCH/DELETE /mgmt/tm/ltm/rule`. |
+| `virtuals_attach_irule` / `virtuals_detach_irule` | Appends or removes fully-qualified iRules on LTM virtual servers by manipulating the `rules` array. |
+| `logs_tail_ltm` | Tails `/var/log/ltm` safely via `POST /mgmt/tm/util/bash` with optional substring filtering. |
 
 All tools automatically scope to the partition in `BIGIP_PARTITION` unless you override the optional partition arguments per call.
 
