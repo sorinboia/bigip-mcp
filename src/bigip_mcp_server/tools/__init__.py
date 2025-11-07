@@ -6,7 +6,7 @@ from fastmcp import FastMCP
 
 from ..bigip_client import BigIPClient
 from ..config import Settings
-from . import irules, logs, virtual_servers
+from . import irules, logs, pools, virtual_servers
 
 
 def register_all(mcp: FastMCP, settings: Settings, client: BigIPClient | None = None) -> None:
@@ -14,5 +14,6 @@ def register_all(mcp: FastMCP, settings: Settings, client: BigIPClient | None = 
 
     client = client or BigIPClient(settings)
     irules.register(mcp, settings, client)
+    pools.register(mcp, settings, client)
     virtual_servers.register(mcp, settings, client)
     logs.register(mcp, settings, client)

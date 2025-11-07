@@ -34,3 +34,8 @@
 ## Follow-Ups
 - Consider capturing server/virtual metadata snapshots (pool, profiles) to ensure attaching rules does not disturb existing bindings.
 - Add integration harness using `fastmcp.Client` over stdio for future regression tests.
+
+## 2025-11-07 (later) – fastMCP harness vs. fake BIG-IP stub
+- Spun up `tests.support.fake_bigip.FakeBigIPServer` to emulate `/mgmt/tm/ltm` + `/mgmt/tm/util/bash` endpoints.
+- Ran `python3 -m bigip_mcp_server.harness --virtual /Common/TestVs --log-lines 2` with env pointing at the stub; harness launched the stdio MCP server, executed all tools via `fastmcp.Client`, and succeeded end-to-end (create/update rule, attach/detach, pool unaffected, log tail).
+- Captured JSON output inline during the CLI run for future debugging.

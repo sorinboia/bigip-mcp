@@ -14,7 +14,7 @@
 
 1. Capture detailed requirements, architecture assumptions, and dependencies for the BIG-IP MCP server, using Context7 references where needed. **Status:** completed.
 2. Design repo scaffolding (Python fastMCP server, configuration layout, docs) and outline implementation tasks. **Status:** completed.
-3. Implement, document, and validate the fastMCP server tools against the BIG-IP APIs. **Status:** in progress (2025-11-07: ran live BIG-IP v17 validation covering iRules CRUD, attach/detach, log tail; added `bigip-mcp-harness` stdio client for repeatable validation; next focus is automated regression coverage).
+3. Implement, document, and validate the fastMCP server tools against the BIG-IP APIs. **Status:** in progress (2025-11-07: ran live BIG-IP v17 validation covering iRules CRUD, attach/detach, log tail; added `bigip-mcp-harness` stdio client for repeatable validation; expanded coverage with virtual listing plus pool list/create/modify tools; added fastMCP client regression test harness using the new fake BIG-IP stub; next focus is automated regression coverage).
 
 Reminder: whenever progress changes on any of these steps, update their statuses here **and** in the planning tool so both stay in sync.
 

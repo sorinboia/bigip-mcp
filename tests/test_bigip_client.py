@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from typing import Any
 
 import httpx
 import pytest
@@ -66,6 +67,106 @@ async def test_list_irules_filters_partition() -> None:
         assert [item["name"] for item in items] == ["keep"]
     finally:
         await client.close()
+
+
+@pytest.mark.asyncio
+async def test_list_virtuals_filters_partition() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/mgmt/tm/ltm/virtual"
+        return httpx.Response(
+            200,
+            json={
+                "items": [
+                    {"name": "keep", "partition": "Common", "fullPath": "/Common/keep"},
+                    {"name": "skip", "partition": "Other", "fullPath": "/Other/skip"},
+                ]
+            },
+        )
+
+    client = _make_client(httpx.MockTransport(handler))
+    try:
+        items = await client.list_virtuals()
+        assert [item["name"] for item in items] == ["keep"]
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_list_pools_sets_select_param() -> None:
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/mgmt/tm/ltm/pool"
+        assert request.url.params.get("$select") == "name,fullPath"
+        return httpx.Response(200, json={"items": []})
+
+    client = _make_client(httpx.MockTransport(handler))
+    try:
+        await client.list_pools(fields=["name", "fullPath", "name"])
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_create_pool_normalizes_members() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"fullPath": "/Common/web", "generation": 1})
+
+    client = _make_client(httpx.MockTransport(handler))
+    try:
+        await client.create_pool(
+            "web",
+            load_balancing_mode="round-robin",
+            monitor="/Common/http",
+            members=["10.0.0.1:80", {"name": "10.0.0.2:80", "ratio": 2}],
+        )
+        body = captured["body"]
+        assert body["partition"] == "Common"
+        assert body["members"][0] == {"name": "10.0.0.1:80"}
+        assert body["members"][1]["ratio"] == 2
+        assert body["loadBalancingMode"] == "round-robin"
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_modify_pool_replaces_payload() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"fullPath": "/Common/web", "generation": 5})
+
+    client = _make_client(httpx.MockTransport(handler))
+    try:
+        response = await client.modify_pool(
+            "web",
+            description="Blue pool",
+            members=[{"name": "10.0.0.1:80"}],
+        )
+        assert response["generation"] == 5
+        assert captured["path"].endswith("/pool/~Common~web")
+        assert captured["body"]["description"] == "Blue pool"
+        assert captured["body"]["members"][0]["name"] == "10.0.0.1:80"
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_modify_pool_requires_changes() -> None:
+    client = BigIPClient(Settings(bigip_host="https://bigip.test", bigip_token="fake"))
+    with pytest.raises(ValueError):
+        await client.modify_pool("web")
+
+
+@pytest.mark.asyncio
+async def test_create_pool_rejects_invalid_member() -> None:
+    client = BigIPClient(Settings(bigip_host="https://bigip.test", bigip_token="fake"))
+    with pytest.raises(ValueError):
+        await client.create_pool("bad", members=[{"ratio": 2}])
 
 
 @pytest.mark.asyncio

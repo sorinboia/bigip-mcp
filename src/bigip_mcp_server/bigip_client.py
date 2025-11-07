@@ -193,6 +193,35 @@ class BigIPClient:
             if item.get("partition") == partition or str(item.get("fullPath", "")).startswith(prefix)
         ]
 
+    @staticmethod
+    def _dedupe_fields(fields: Sequence[str] | None) -> list[str]:
+        deduped: list[str] = []
+        if not fields:
+            return deduped
+        for field in fields:
+            if not field:
+                continue
+            cleaned = field.strip()
+            if cleaned and cleaned not in deduped:
+                deduped.append(cleaned)
+        return deduped
+
+    @staticmethod
+    def _normalize_pool_members(members: Sequence[str | Mapping[str, Any]]) -> list[dict[str, Any]]:
+        normalized: list[dict[str, Any]] = []
+        for member in members:
+            if isinstance(member, str):
+                if not member.strip():
+                    raise ValueError("Pool member strings must be non-empty")
+                normalized.append({"name": member})
+            elif isinstance(member, Mapping):
+                if "name" not in member or not str(member["name"]).strip():
+                    raise ValueError("Pool member mappings must include a non-empty 'name' key")
+                normalized.append(dict(member))
+            else:  # pragma: no cover - defensive type guard
+                raise TypeError("Pool members must be strings or mappings")
+        return normalized
+
     # ------------------------------------------------------------------ #
     # iRules
     # ------------------------------------------------------------------ #
@@ -252,6 +281,25 @@ class BigIPClient:
     # ------------------------------------------------------------------ #
     # Virtual servers
     # ------------------------------------------------------------------ #
+    async def list_virtuals(self, fields: Sequence[str] | None = None) -> list[dict[str, Any]]:
+        params = None
+        selected = self._dedupe_fields(fields)
+        if selected:
+            params = {"$select": ",".join(selected)}
+
+        response = await self.request("GET", self._ltm_path("virtual"), params=params)
+        raw_items: Sequence[Mapping[str, Any]]
+        if isinstance(response, Mapping):
+            maybe_items = response.get("items", [])
+            raw_items = maybe_items if isinstance(maybe_items, Sequence) else []
+        elif isinstance(response, Sequence):
+            raw_items = response
+        else:
+            raw_items = []
+
+        filtered = self._filter_partition(raw_items, self.settings.bigip_partition)
+        return list(filtered)
+
     async def _get_virtual(self, virtual_name: str, *, partition: str | None = None) -> Mapping[str, Any]:
         path = self._ltm_path("virtual", name=virtual_name, partition=partition)
         response = await self.request("GET", path)
@@ -303,6 +351,79 @@ class BigIPClient:
             "rules": new_rules,
             "changed": changed,
         }
+
+    # ------------------------------------------------------------------ #
+    # Pools
+    # ------------------------------------------------------------------ #
+    async def list_pools(self, fields: Sequence[str] | None = None) -> list[dict[str, Any]]:
+        params = None
+        selected = self._dedupe_fields(fields)
+        if selected:
+            params = {"$select": ",".join(selected)}
+
+        response = await self.request("GET", self._ltm_path("pool"), params=params)
+        raw_items: Sequence[Mapping[str, Any]]
+        if isinstance(response, Mapping):
+            maybe_items = response.get("items", [])
+            raw_items = maybe_items if isinstance(maybe_items, Sequence) else []
+        elif isinstance(response, Sequence):
+            raw_items = response
+        else:
+            raw_items = []
+
+        filtered = self._filter_partition(raw_items, self.settings.bigip_partition)
+        return list(filtered)
+
+    async def create_pool(
+        self,
+        name: str,
+        *,
+        partition: str | None = None,
+        load_balancing_mode: str | None = None,
+        monitor: str | None = None,
+        description: str | None = None,
+        members: Sequence[str | Mapping[str, Any]] | None = None,
+    ) -> Mapping[str, Any]:
+        payload: dict[str, Any] = {
+            "name": name,
+            "partition": partition or self.settings.bigip_partition,
+        }
+        if load_balancing_mode:
+            payload["loadBalancingMode"] = load_balancing_mode
+        if monitor is not None:
+            payload["monitor"] = monitor
+        if description is not None:
+            payload["description"] = description
+        if members is not None:
+            payload["members"] = self._normalize_pool_members(members)
+
+        return await self.request("POST", self._ltm_path("pool"), json=payload)
+
+    async def modify_pool(
+        self,
+        name: str,
+        *,
+        partition: str | None = None,
+        load_balancing_mode: str | None = None,
+        monitor: str | None = None,
+        description: str | None = None,
+        members: Sequence[str | Mapping[str, Any]] | None = None,
+    ) -> Mapping[str, Any]:
+        payload: dict[str, Any] = {}
+        if load_balancing_mode:
+            payload["loadBalancingMode"] = load_balancing_mode
+        if monitor is not None:
+            payload["monitor"] = monitor
+        if description is not None:
+            payload["description"] = description
+        if members is not None:
+            payload["members"] = self._normalize_pool_members(members)
+
+        if not payload:
+            raise ValueError("At least one field must be provided to modify a pool")
+
+        path = self._ltm_path("pool", name=name, partition=partition)
+        return await self.request("PATCH", path, json=payload)
 
     # ------------------------------------------------------------------ #
     # Logs

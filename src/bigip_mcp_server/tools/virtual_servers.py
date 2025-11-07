@@ -29,6 +29,25 @@ def register(mcp: FastMCP, settings: Settings, client: BigIPClient) -> None:
         partition = partition or settings.bigip_partition
         return f"/{partition}/{name}"
 
+    def _parse_fields(select_fields: str | None) -> list[str] | None:
+        if not select_fields:
+            return None
+        values = [field.strip() for field in select_fields.split(",") if field.strip()]
+        return values or None
+
+    @mcp.tool(
+        name="virtuals_list",
+        description="List LTM virtual servers in the configured partition (GET /mgmt/tm/ltm/virtual).",
+    )
+    async def list_virtuals(select_fields: str | None = None) -> dict:
+        fields = _parse_fields(select_fields)
+        items = await _call(client.list_virtuals, fields=fields)
+        return {
+            "partition": settings.bigip_partition,
+            "count": len(items),
+            "items": items,
+        }
+
     @mcp.tool(
         name="virtuals_attach_irule",
         description="Attach an iRule to a virtual server (PATCH /mgmt/tm/ltm/virtual/<name>).",
