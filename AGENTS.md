@@ -14,7 +14,7 @@
 
 1. Capture detailed requirements, architecture assumptions, and dependencies for the BIG-IP MCP server, using Context7 references where needed. **Status:** completed.
 2. Design repo scaffolding (Python fastMCP server, configuration layout, docs) and outline implementation tasks. **Status:** completed.
-3. Implement, document, and validate the fastMCP server tools against the BIG-IP APIs. **Status:** pending.
+3. Implement, document, and validate the fastMCP server tools against the BIG-IP APIs. **Status:** in progress (2025-11-07: ran live BIG-IP v17 validation covering iRules CRUD, attach/detach, log tail; added `bigip-mcp-harness` stdio client for repeatable validation; next focus is automated regression coverage).
 
 Reminder: whenever progress changes on any of these steps, update their statuses here **and** in the planning tool so both stay in sync.
 
@@ -23,4 +23,4 @@ Reminder: whenever progress changes on any of these steps, update their statuses
 When finishing a task always consider and if needed update the AGENTS.md file.
 Use git to keep track of all changes.
 When doing the research make sure you create additinal files and keep the information in there. They need to be in markdown.
-Keep the plan/tool statuses synchronized: after completing a step, update the plan tracker and mirror the change in the "Current Plan & Progress" section above.
+Keep the plan/tool statuses synchronized: after completing a step, update the plan tracker and mirror the change in the "Current Plan & Progress" section above. If new tasks are added update the plan.

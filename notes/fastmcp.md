@@ -15,3 +15,7 @@
 
 ## CLI Factory Hooks
 - `fastmcp run server.py:create_server` supports async factory functions so we can perform auth handshakes before returning the FastMCP instance. Source: /jlowin/fastmcp docs/patterns/cli.mdx.
+
+## Tool Metadata & Management
+- Tools can be toggled at runtime: after `@mcp.tool` registration we can call `.disable()` / `.enable()` on the decorated function, or remove it entirely via `FastMCP.remove_tool(name)` which automatically emits `notifications/tools/list_changed` to clients. Source: /jlowin/fastmcp docs/servers/tools.mdx (Context7).
+- Tool transformations (e.g., tagging, allowlists) are controlled through `tool_transformations` on the transport/client config so we can expose only the BIG-IP scopes we want. Source: /jlowin/fastmcp docs/clients/transports.mdx (Context7).
