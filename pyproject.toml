@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools>=65", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "bigip-mcp-server"
+version = "0.1.0"
+description = "FastMCP server that manages F5 BIG-IP iRules and logs"
+requires-python = ">=3.11"
+authors = [
+  { name = "AI Assistant" }
+]
+dependencies = [
+  "fastmcp>=0.3.0",
+  "httpx>=0.27",
+  "pydantic>=2.7"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.23",
+  "ruff>=0.6"
+]
+
+[project.scripts]
+bigip-mcp-server = "bigip_mcp_server.__main__:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
