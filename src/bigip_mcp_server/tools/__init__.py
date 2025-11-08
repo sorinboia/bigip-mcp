@@ -6,13 +6,14 @@ from fastmcp import FastMCP
 
 from ..bigip_client import BigIPClient
 from ..config import Settings
-from . import irules, logs, pools, virtual_servers
+from . import datagroups, irules, logs, pools, virtual_servers
 
 
 def register_all(mcp: FastMCP, settings: Settings, client: BigIPClient | None = None) -> None:
     """Register every tool bundle with the shared settings object."""
 
     client = client or BigIPClient(settings)
+    datagroups.register(mcp, settings, client)
     irules.register(mcp, settings, client)
     pools.register(mcp, settings, client)
     virtual_servers.register(mcp, settings, client)

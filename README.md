@@ -5,6 +5,7 @@ Model Context Protocol (MCP) server that exposes F5 BIG-IP management primitives
 - Create, delete, update, and inspect iRules.
 - Attach/detach iRules on LTM Virtual Servers.
 - List virtual servers and manage pools (list/create/modify) to rebind application backends safely.
+- Create, update, and delete internal data groups for request routing metadata.
 - Query operational logs (e.g., `/var/log/ltm`) with simple filtering controls.
 
 ## Project Layout
@@ -91,6 +92,8 @@ Use `--output validation.json` to capture the JSON blob on disk for later auditi
 | `virtuals_attach_irule` / `virtuals_detach_irule` | Appends or removes fully-qualified iRules on LTM virtual servers by manipulating the `rules` array. |
 | `pools_list` | Lists LTM pools with optional `$select` filters. |
 | `pools_create` / `pools_modify` | Manage pools via `POST`/`PATCH /mgmt/tm/ltm/pool`, including member replacement. |
+| `datagroups_list` | Lists internal data groups in the configured partition. |
+| `datagroups_create` / `datagroups_update` / `datagroups_delete` | CRUD helpers that wrap `/mgmt/tm/ltm/data-group/internal`. |
 | `logs_tail_ltm` | Tails `/var/log/ltm` safely via `POST /mgmt/tm/util/bash` with optional substring filtering. |
 
 All tools automatically scope to the partition in `BIGIP_PARTITION` unless you override the optional partition arguments per call.

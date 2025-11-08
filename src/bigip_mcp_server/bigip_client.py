@@ -222,6 +222,30 @@ class BigIPClient:
                 raise TypeError("Pool members must be strings or mappings")
         return normalized
 
+    @staticmethod
+    def _normalize_data_group_records(
+        records: Sequence[str | Mapping[str, Any]]
+    ) -> list[dict[str, Any]]:
+        normalized: list[dict[str, Any]] = []
+        for record in records:
+            if isinstance(record, str):
+                name = record.strip()
+                if not name:
+                    raise ValueError("Data group record strings must be non-empty")
+                normalized.append({"name": name})
+                continue
+            if isinstance(record, Mapping):
+                name = str(record.get("name", "")).strip()
+                if not name:
+                    raise ValueError("Data group records must include a non-empty 'name'")
+                entry: dict[str, Any] = {"name": name}
+                if "data" in record and record["data"] is not None:
+                    entry["data"] = record["data"]
+                normalized.append(entry)
+                continue
+            raise TypeError("Data group records must be strings or mappings")
+        return normalized
+
     # ------------------------------------------------------------------ #
     # iRules
     # ------------------------------------------------------------------ #
@@ -424,6 +448,83 @@ class BigIPClient:
 
         path = self._ltm_path("pool", name=name, partition=partition)
         return await self.request("PATCH", path, json=payload)
+
+    # ------------------------------------------------------------------ #
+    # Data groups (internal)
+    # ------------------------------------------------------------------ #
+    async def list_data_groups(self, include_records: bool = False) -> list[dict[str, Any]]:
+        fields = ["name", "fullPath", "partition", "type", "description"]
+        if include_records:
+            fields.append("records")
+        params = {"$select": ",".join(fields)}
+
+        response = await self.request("GET", self._ltm_path("data-group/internal"), params=params)
+        raw_items: Sequence[Mapping[str, Any]]
+        if isinstance(response, Mapping):
+            maybe_items = response.get("items", [])
+            raw_items = maybe_items if isinstance(maybe_items, Sequence) else []
+        elif isinstance(response, Sequence):
+            raw_items = response
+        else:
+            raw_items = []
+
+        filtered = self._filter_partition(raw_items, self.settings.bigip_partition)
+        if not include_records:
+            for entry in filtered:
+                entry.pop("records", None)
+        return list(filtered)
+
+    async def create_data_group(
+        self,
+        name: str,
+        *,
+        type: str,
+        partition: str | None = None,
+        description: str | None = None,
+        records: Sequence[str | Mapping[str, Any]] | None = None,
+    ) -> Mapping[str, Any]:
+        if not type:
+            raise ValueError("Data group type is required (ip, string, or integer)")
+        payload: dict[str, Any] = {
+            "name": name,
+            "partition": partition or self.settings.bigip_partition,
+            "type": type,
+        }
+        if description is not None:
+            payload["description"] = description
+        if records is not None:
+            payload["records"] = self._normalize_data_group_records(records)
+
+        return await self.request("POST", self._ltm_path("data-group/internal"), json=payload)
+
+    async def update_data_group(
+        self,
+        name: str,
+        *,
+        partition: str | None = None,
+        type: str | None = None,
+        description: str | None = None,
+        records: Sequence[str | Mapping[str, Any]] | None = None,
+    ) -> Mapping[str, Any]:
+        payload: dict[str, Any] = {}
+        if type is not None:
+            if not type:
+                raise ValueError("Data group type cannot be empty")
+            payload["type"] = type
+        if description is not None:
+            payload["description"] = description
+        if records is not None:
+            payload["records"] = self._normalize_data_group_records(records)
+
+        if not payload:
+            raise ValueError("At least one field must be provided to update a data group")
+
+        path = self._ltm_path("data-group/internal", name=name, partition=partition)
+        return await self.request("PATCH", path, json=payload)
+
+    async def delete_data_group(self, name: str, *, partition: str | None = None) -> Any:
+        path = self._ltm_path("data-group/internal", name=name, partition=partition)
+        return await self.request("DELETE", path)
 
     # ------------------------------------------------------------------ #
     # Logs

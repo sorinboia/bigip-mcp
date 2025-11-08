@@ -170,6 +170,120 @@ async def test_create_pool_rejects_invalid_member() -> None:
 
 
 @pytest.mark.asyncio
+async def test_list_data_groups_handles_records_flag() -> None:
+    selects: list[str | None] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        selects.append(request.url.params.get("$select"))
+        return httpx.Response(
+            200,
+            json={
+                "items": [
+                    {
+                        "name": "keep",
+                        "partition": "Common",
+                        "fullPath": "/Common/keep",
+                        "type": "string",
+                        "records": [{"name": "foo", "data": "bar"}],
+                    },
+                    {
+                        "name": "skip",
+                        "partition": "Other",
+                        "fullPath": "/Other/skip",
+                        "type": "string",
+                    },
+                ]
+            },
+        )
+
+    client = _make_client(httpx.MockTransport(handler))
+    try:
+        short = await client.list_data_groups()
+        assert short[0]["name"] == "keep"
+        assert "records" not in short[0]
+        verbose = await client.list_data_groups(include_records=True)
+        assert verbose[0]["records"][0]["data"] == "bar"
+        assert selects[0] == "name,fullPath,partition,type,description"
+        assert "records" in (selects[1] or "")
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_create_data_group_normalizes_records() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"fullPath": "/Common/dg", "generation": 4})
+
+    client = _make_client(httpx.MockTransport(handler))
+    try:
+        await client.create_data_group(
+            "dg",
+            type="string",
+            description="demo",
+            records=["alpha", {"name": "beta", "data": "2"}],
+        )
+        body = captured["body"]
+        assert body["partition"] == "Common"
+        assert body["records"][0] == {"name": "alpha"}
+        assert body["records"][1]["data"] == "2"
+        assert body["type"] == "string"
+        assert captured["path"] == "/mgmt/tm/ltm/data-group/internal"
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_update_data_group_requires_changes() -> None:
+    client = BigIPClient(Settings(bigip_host="https://bigip.test", bigip_token="fake"))
+    with pytest.raises(ValueError):
+        await client.update_data_group("dg")
+
+
+@pytest.mark.asyncio
+async def test_update_data_group_replaces_records() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        captured["body"] = json.loads(request.content)
+        return httpx.Response(200, json={"fullPath": "/Common/dg", "generation": 10})
+
+    client = _make_client(httpx.MockTransport(handler))
+    try:
+        result = await client.update_data_group(
+            "dg",
+            description="updated",
+            records=[{"name": "alpha", "data": "1"}],
+        )
+        assert result["generation"] == 10
+        assert captured["path"].endswith("/data-group/internal/~Common~dg")
+        assert captured["body"]["records"][0]["name"] == "alpha"
+        assert captured["body"]["description"] == "updated"
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_delete_data_group_hits_endpoint() -> None:
+    captured: dict[str, Any] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["path"] = request.url.path
+        return httpx.Response(200, json={})
+
+    client = _make_client(httpx.MockTransport(handler))
+    try:
+        await client.delete_data_group("dg")
+        assert captured["path"].endswith("/data-group/internal/~Common~dg")
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
 async def test_attach_irule_sets_changed_flag() -> None:
     calls: list[str] = []
 

@@ -13,6 +13,7 @@ class _State:
     def __init__(self) -> None:
         self.rules: dict[str, dict[str, Any]] = {}
         self.pools: dict[str, dict[str, Any]] = {}
+        self.data_groups: dict[str, dict[str, Any]] = {}
         self.virtuals: dict[str, dict[str, Any]] = {
             "/Common/TestVs": {
                 "name": "TestVs",
@@ -89,12 +90,25 @@ class FakeBigIPRequestHandler(BaseHTTPRequestHandler):
             items = list(self.server.state.pools.values())
             self._send_json({"items": items})
             return
+        if path == "/mgmt/tm/ltm/data-group/internal":
+            items = list(self.server.state.data_groups.values())
+            self._send_json({"items": items})
+            return
 
         if path.startswith("/mgmt/tm/ltm/virtual/"):
             identifier = self._decode_name(path.rsplit("/", 1)[-1])
             virtual = self.server.state.virtuals.get(identifier)
             if virtual:
                 self._send_json(virtual)
+                return
+            self._not_found()
+            return
+
+        if path.startswith("/mgmt/tm/ltm/data-group/internal/"):
+            identifier = self._decode_name(path.rsplit("/", 1)[-1])
+            data_group = self.server.state.data_groups.get(identifier)
+            if data_group:
+                self._send_json(data_group)
                 return
             self._not_found()
             return
@@ -136,6 +150,24 @@ class FakeBigIPRequestHandler(BaseHTTPRequestHandler):
             }
             self.server.state.pools[full_path] = pool
             self._send_json(pool)
+            return
+
+        if path == "/mgmt/tm/ltm/data-group/internal":
+            body = self._json_body()
+            name = body.get("name", "dg")
+            partition = body.get("partition", "Common")
+            full_path = f"/{partition}/{name}"
+            data_group = {
+                "name": name,
+                "partition": partition,
+                "fullPath": full_path,
+                "type": body.get("type", "string"),
+                "description": body.get("description", ""),
+                "records": body.get("records", []),
+                "generation": self.server.state.next_generation(),
+            }
+            self.server.state.data_groups[full_path] = data_group
+            self._send_json(data_group)
             return
 
         if path in {"/tm/util/bash", "/mgmt/tm/util/bash"}:
@@ -183,6 +215,20 @@ class FakeBigIPRequestHandler(BaseHTTPRequestHandler):
             self._send_json(pool)
             return
 
+        if path.startswith("/mgmt/tm/ltm/data-group/internal/"):
+            identifier = self._decode_name(path.rsplit("/", 1)[-1])
+            data_group = self.server.state.data_groups.get(identifier)
+            if not data_group:
+                self._not_found()
+                return
+            body = self._json_body()
+            for key in ("type", "description", "records"):
+                if key in body:
+                    data_group[key] = body[key]
+            data_group["generation"] = self.server.state.next_generation()
+            self._send_json(data_group)
+            return
+
         self._not_found()
 
     def do_DELETE(self) -> None:  # noqa: N802
@@ -190,6 +236,12 @@ class FakeBigIPRequestHandler(BaseHTTPRequestHandler):
         if path.startswith("/mgmt/tm/ltm/rule/"):
             identifier = self._decode_name(path.rsplit("/", 1)[-1])
             self.server.state.rules.pop(identifier, None)
+            self._send_empty_json(200)
+            return
+
+        if path.startswith("/mgmt/tm/ltm/data-group/internal/"):
+            identifier = self._decode_name(path.rsplit("/", 1)[-1])
+            self.server.state.data_groups.pop(identifier, None)
             self._send_empty_json(200)
             return
 

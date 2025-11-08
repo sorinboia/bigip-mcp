@@ -67,6 +67,7 @@ async def test_pool_flow_via_mcp_client(fake_bigip: FakeBigIPServer) -> None:
     pool_name = f"pytest_pool_{int(time.time())}"
     members_initial = ["10.0.0.1:80"]
     members_updated = [{"name": "10.0.0.2:80", "ratio": 2}]
+    datagroup_name = f"pytest_dg_{int(time.time())}"
 
     client = Client(transport, name="pytest-mcp-client")
     async with client:
@@ -100,3 +101,30 @@ async def test_pool_flow_via_mcp_client(fake_bigip: FakeBigIPServer) -> None:
         pools_after = await _call_tool(client, "pools_list")
         names = [item.get("name") for item in pools_after["items"]]
         assert pool_name in names
+
+        datagroups_before = await _call_tool(client, "datagroups_list")
+        assert isinstance(datagroups_before["items"], list)
+
+        created_dg = await _call_tool(
+            client,
+            "datagroups_create",
+            name=datagroup_name,
+            type="string",
+            records=[{"name": "alpha", "data": "1"}],
+        )
+        assert created_dg["status"] == "created"
+
+        updated_dg = await _call_tool(
+            client,
+            "datagroups_update",
+            name=datagroup_name,
+            records=[{"name": "beta", "data": "2"}],
+        )
+        assert updated_dg["status"] == "updated"
+
+        datagroups_after = await _call_tool(client, "datagroups_list", include_records=True)
+        dg_names = [item.get("name") for item in datagroups_after["items"]]
+        assert datagroup_name in dg_names
+
+        deleted_dg = await _call_tool(client, "datagroups_delete", name=datagroup_name)
+        assert deleted_dg["status"] == "deleted"
